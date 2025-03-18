@@ -1,2 +1,89 @@
-# simple-phpsec-firewall
- Simple php security firewall blocking malicious requests.
+# PHP Security Firewall
+
+A lightweight PHP security firewall to prevent malicious file uploads, SQL injection, and suspicious request patterns.
+
+## Features
+- Blocks PHP file uploads regardless of extension.
+- Detects and blocks raw POST data containing PHP code.
+- Prevents access to known malicious files.
+- Identifies and blocks SQL injection attempts.
+- Detects suspicious request patterns and bad user agents.
+- Logs all blocked attempts for auditing.
+
+## Configuration
+Modify the following variables as needed:
+- `$log_file` - Path to the security log.
+- `$enable_logging` - Set to `true` to enable logging.
+- `$is_wordpress` - Set to `true` for WordPress compatibility.
+
+## Logging
+Blocked requests are logged in the configured log file with details such as:
+- Timestamp
+- Block reason
+- IP address
+
+### Setting It Up: A Step-by-Step Guide
+
+#### Step 1: Install the Script
+Create a directory for the firewall:
+```sh
+mkdir -p /www/sec_firewall
+```
+
+Place the firewall PHP file in the folder:
+```sh
+mv security_firewall.php /www/sec_firewall/
+```
+
+Set permissions to ensure security and allow logging:
+```sh
+chmod 664 /www/sec_firewall/security_firewall.php
+chmod 755 /www/sec_firewall/
+```
+
+#### Step 2: Configure PHP
+Edit your `php.ini` file to prepend the firewall:
+```ini
+auto_prepend_file = /www/sec_firewall/security_firewall.php
+```
+
+For shared hosting, use `.htaccess`:
+```apache
+php_value auto_prepend_file "/www/sec_firewall/security_firewall.php"
+```
+
+#### Step 3: Test the Firewall
+Simulate an attack to ensure it’s working by attempting to access a sensitive file:
+```sh
+http://yoursite.com/wp-config.php
+```
+
+#### Step 4: Special Instructions for aaPanel (Nginx Users)
+If you're using **aaPanel** with **Nginx** and have **XSS security** enabled:
+1. Open the **File Manager**.
+2. Navigate to the domain's root path.
+3. Edit the `.user.ini` file.
+4. Add the following to the `open_basedir` rule:
+   ```ini
+   :/www/server/panel/tmp:/www/sec_firewall/
+   ```
+
+So you have by default this line , right ?
+   ```
+   open_basedir=/www/wwwroot/DOMAIN_NAME/:/tmp/
+   ```
+
+After you change it, you should have this:
+   ```
+   open_basedir=/www/wwwroot/DOMAIN_NAME/:/tmp/:/www/server/panel/tmp:/www/sec_firewall/
+   ```
+
+5. Save the file.
+
+This ensures the firewall script is correctly loaded while website security.
+
+## License
+This project is licensed under the MIT License.
+
+## Disclaimer
+Use at your own risk. No warranty is provided for any damages that may occur.
