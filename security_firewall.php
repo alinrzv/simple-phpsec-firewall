@@ -4,6 +4,20 @@ $log_file = '/www/sec_firewall/security_log.txt'; // Configure your log path
 $enable_logging = true; // Set to false to disable logging
 $is_wordpress = true;
 
+if($is_wordpress){
+if (!empty($_SERVER['SCRIPT_FILENAME']) && preg_match('#/wp-content/uploads/.+\.php$#i', $_SERVER['SCRIPT_FILENAME'])) {
+    // Log the attempt (optional)
+    if ($enable_logging) {
+        $log_message = date('Y-m-d H:i:s') . " - BLOCKED PHP EXECUTION: " . $_SERVER['SCRIPT_FILENAME'] . " - IP: " . $_SERVER['REMOTE_ADDR'] . "\n";
+        @file_put_contents($log_file, $log_message, FILE_APPEND | LOCK_EX);
+    }
+
+    // Block execution
+    header("HTTP/1.1 403 Forbidden");
+    exit;
+}
+}
+
 // Function to Detect Hidden PHP Files
 function is_php_file($file_path) {
     if (!file_exists($file_path)) {
@@ -39,7 +53,7 @@ if (!empty($_FILES)) {
             $mime_type = mime_content_type($temp_path);
 
             // Block PHP files (by content, not extension)
-            if (is_php_file($temp_path) || preg_match('/(application\/x-httpd-php|text\/x-php|application\/octet-stream)/i', $mime_type)) {
+            if (is_php_file($temp_path) || preg_match('/(application\/x-httpd-php|text\/x-php|application\/octet-stream)/i', $mime_type) || preg_match('/(php|phtml|phar)/i', $filename)) {
 
                 // Log the attempt
                 if ($enable_logging) {
@@ -173,6 +187,7 @@ if ($is_wordpress) {
     unset($blocked_files['wp-signup.php']);
     unset($blocked_files['wp-login.php']);
     unset($blocked_files['post.php']);
+    unset($blocked_files['upload.php']);
 }
 
 // Compiled Malicious Patterns
