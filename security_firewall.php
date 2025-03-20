@@ -188,6 +188,7 @@ if ($is_wordpress) {
     unset($blocked_files['wp-login.php']);
     unset($blocked_files['post.php']);
     unset($blocked_files['upload.php']);
+    unset($blocked_files['update.php']);
 }
 
 // Compiled Malicious Patterns
