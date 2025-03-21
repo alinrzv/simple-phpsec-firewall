@@ -82,6 +82,39 @@ After you change it, you should have this:
 
 This ensures the firewall script is correctly loaded while website security.
 
+### Nginx rewrite for wordpress using this prepend firewall 
+
+```
+# Serve static files directly without PHP processing
+location ~* \.(?:ico|css|js|gif|jpe?g|png|txt|woff2?|eot|ttf|svg|pdf)$ {
+    expires 6M;
+    add_header Cache-Control "public, max-age=15552000";
+    try_files $uri /index.php?$args;
+}
+
+location / {
+    try_files $uri $uri/ /index.php?$args;
+
+    include fastcgi_params;
+    fastcgi_pass unix:/tmp/php-cgi-83.sock;  # Update based on your system
+    fastcgi_index index.php;
+
+    # Security headers
+    fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+    fastcgi_param SCRIPT_NAME $fastcgi_script_name;
+    fastcgi_param PATH_INFO $uri;
+        
+    # Prevent direct execution of certain PHP files (WordPress protection)
+    location ~* /(xmlrpc\.php|wp-config\.php|\.htaccess) {
+        deny all;
+    }
+    
+}
+
+# Ensure proper redirection for WordPress admin panel
+rewrite /wp-admin$ $scheme://$host$uri/ permanent;
+```
+
 ## License
 This project is licensed under the MIT License.
 
