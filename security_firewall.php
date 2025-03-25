@@ -4,104 +4,61 @@ $log_file = '/www/sec_firewall/security_log.txt'; // Configure your log path
 $enable_logging = true; // Set to false to disable logging
 $is_wordpress = true;
 
-if($is_wordpress){
-if (!empty($_SERVER['SCRIPT_FILENAME']) && preg_match('#/wp-content/uploads/.+\.php$#i', $_SERVER['SCRIPT_FILENAME'])) {
-    // Log the attempt (optional)
+
+// Utility: Fast PHP payload detection
+function is_php_payload($data_or_file) {
+    if (is_string($data_or_file) && is_file($data_or_file)) {
+        $data = @file_get_contents($data_or_file, false, null, 0, 1024);
+    } else {
+        $data = is_string($data_or_file) ? substr($data_or_file, 0, 1024) : '';
+    }
+    return $data && (strpos($data, '<?php') !== false || strpos($data, '<?=') !== false);
+}
+
+// Early block for PHP execution in uploads
+if ($is_wordpress && !empty($_SERVER['SCRIPT_FILENAME']) && preg_match('#/wp-content/uploads/.+\.php$#i', $_SERVER['SCRIPT_FILENAME'])) {
     if ($enable_logging) {
-        $log_message = date('Y-m-d H:i:s') . " - BLOCKED PHP EXECUTION: " . $_SERVER['SCRIPT_FILENAME'] . " - IP: " . $_SERVER['REMOTE_ADDR'] . "\n";
+        $log_message = date('Y-m-d H:i:s') . " - BLOCKED PHP EXECUTION: {$_SERVER['SCRIPT_FILENAME']} - IP: {$_SERVER['REMOTE_ADDR']}\n";
         @file_put_contents($log_file, $log_message, FILE_APPEND | LOCK_EX);
     }
-
-    // Block execution
     header("HTTP/1.1 403 Forbidden");
     exit;
 }
-}
 
-// Function to Detect Hidden PHP Files
-function is_php_file($file_path) {
-    if (!file_exists($file_path)) {
-        return false;
-    }
-
-    // Read the first 8 bytes (UTF-8 BOM is 3 bytes + `<?php` is 5 bytes)
-    $handle = fopen($file_path, 'rb');
-    if ($handle === false) {
-        return false;
-    }
-
-    $first_bytes = fread($handle, 8); // Read first 8 bytes
-    fclose($handle);
-
-    // UTF-8 BOM check (first 3 bytes: \xEF\xBB\xBF)
-    if (substr($first_bytes, 0, 3) === "\xEF\xBB\xBF") {
-        $first_bytes = substr($first_bytes, 3); // Remove BOM
-    }
-
-    // Detect `<?php`
-    return strpos($first_bytes, '<?php') === 0;
-}
-
-// Intercept File Uploads (BEFORE other security checks)
+// Fast upload inspection
 if (!empty($_FILES)) {
     foreach ($_FILES as $file) {
         if ($file['error'] === UPLOAD_ERR_OK) {
             $filename = strtolower($file['name']);
             $temp_path = $file['tmp_name'];
-
-            // Get file MIME type
             $mime_type = mime_content_type($temp_path);
 
-            // Block PHP files (by content, not extension)
-            if (is_php_file($temp_path) || preg_match('/(application\/x-httpd-php|text\/x-php|application\/octet-stream)/i', $mime_type) || preg_match('/(php|phtml|phar)/i', $filename)) {
+            if (is_php_payload($temp_path) ||
+                preg_match('/(application\/x-httpd-php|text\/x-php|application\/octet-stream)/i', $mime_type) ||
+                preg_match('/(php|phtml|phar)/i', $filename)) {
 
-                // Log the attempt
                 if ($enable_logging) {
-                    $log_message = date('Y-m-d H:i:s') . " - BLOCKED UPLOAD: $filename - MIME: $mime_type - IP: " . $_SERVER['REMOTE_ADDR'] . "\n";
+                    $log_message = date('Y-m-d H:i:s') . " - BLOCKED UPLOAD: $filename - MIME: $mime_type - IP: {$_SERVER['REMOTE_ADDR']}\n";
                     @file_put_contents($log_file, $log_message, FILE_APPEND | LOCK_EX);
                 }
-
-                // Block the upload
                 header("HTTP/1.1 403 Forbidden");
-                #echo "File type not allowed.";
                 exit;
             }
         }
     }
 }
 
-// Detect PHP Code in Raw POST Data
-function detect_php_in_raw_post() {
-    $handle = fopen('php://input', 'rb');
-    if ($handle === false) {
-        return false;
+// Block raw POST PHP payloads
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $raw_input = file_get_contents('php://input', false, null, 0, 1024);
+    if (is_php_payload($raw_input)) {
+        if ($enable_logging) {
+            $log_message = date('Y-m-d H:i:s') . " - BLOCKED RAW PHP UPLOAD - IP: {$_SERVER['REMOTE_ADDR']}\n";
+            @file_put_contents($log_file, $log_message, FILE_APPEND | LOCK_EX);
+        }
+        header("HTTP/1.1 403 Forbidden");
+        exit;
     }
-
-    $first_bytes = fread($handle, 8); // Read first 8 bytes
-    fclose($handle);
-
-    // UTF-8 BOM check
-    if (substr($first_bytes, 0, 3) === "\xEF\xBB\xBF") {
-        $first_bytes = substr($first_bytes, 3); // Remove BOM
-    }
-
-    // Detect `<?php`
-    return strpos($first_bytes, '<?php') === 0;
-}
-
-// Intercept Raw POST Data Uploads
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && detect_php_in_raw_post()) {
-
-    // Log the attack
-    if ($enable_logging) {
-        $log_message = date('Y-m-d H:i:s') . " - BLOCKED RAW PHP UPLOAD - IP: " . $_SERVER['REMOTE_ADDR'] . "\n";
-        @file_put_contents($log_file, $log_message, FILE_APPEND | LOCK_EX);
-    }
-
-    // Block the request
-    header("HTTP/1.1 403 Forbidden");
-    #echo "Raw PHP data upload blocked.";
-    exit;
 }
 
 // Optimized Blocked Files (O(1) hash lookups)
@@ -280,5 +237,5 @@ if ($block_reason) {
     exit;
 }
 
-// Allow legitimate traffic
+// All checks passed: continue normal execution
 ?>

@@ -115,6 +115,27 @@ location / {
 rewrite /wp-admin$ $scheme://$host$uri/ permanent;
 ```
 
+# Changelog
+
+## [2025-03-25] - Hardened PHP Firewall Script (Prepend-Optimized)
+
+### Added
+- `is_php_payload()` function for unified detection of PHP code in both files and raw binary streams.
+- Fast upload inspection using `$_FILES` and MIME type filtering combined with PHP content detection.
+- Early blocking of raw POST body containing PHP code (up to first 1024 bytes).
+
+### Changed
+- Replaced previous multi-function detection approach with a streamlined and centralized `is_php_payload()` call.
+- Combined raw input and file content scans using the same lightweight buffer strategy.
+- Simplified logic blocks for early exits and minimal overhead on valid traffic.
+
+### Performance
+- All reads limited to 1024 bytes for faster execution.
+- No redundant file handles or full file reads.
+- Optimized for use as `auto_prepend_file` in PHP for early execution.
+
+
+
 ## License
 This project is licensed under the MIT License.
 
