@@ -211,8 +211,16 @@ if (!$block_reason) {
     }
 }
 
+$safe_paths = [];
+
+if ($is_wordpress) {
+    $safe_paths[] = '/wp-json/rankmath/v1/updateMeta';
+}
+
+$parsed_path = parse_url($request_uri, PHP_URL_PATH);
+
 // 4. SQLMap Detection
-if (!$block_reason) {
+if (!$block_reason && !in_array($parsed_path, $safe_paths)) {
     foreach ($sqlmap_patterns as $pattern) {
         if (preg_match($pattern, $request_data)) {
             $block_reason = "SQLMap-like behavior detected";
