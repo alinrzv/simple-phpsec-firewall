@@ -48,8 +48,8 @@ if (!empty($_FILES)) {
     }
 }
 
-// Block raw POST PHP payloads
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+// Filter raw POST PHP payloads
+if (isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUEST_METHOD'] === 'POST') {
     $raw_input = file_get_contents('php://input', false, null, 0, 1024);
     if (is_php_payload($raw_input)) {
         if ($enable_logging) {
