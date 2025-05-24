@@ -149,10 +149,12 @@ if ($is_wordpress) {
 }
 
 // Compiled Malicious Patterns
+// some of the urls like signatures validations etc might contain
+// r57|c99|b374k as string so we remove it !
 $blocked_patterns = [
     '/(?:\.\.\/\.\.|phpinfo|eval\(|base64_decode|config|\.env|swagger|telescope|'.
     '_all_dbs|v2\/_catalog|debug\/default\/view|server\-status|login\.action|'.
-    'shell|symlink|r57|c99|cpanel|b374k|deface|filemanager|pki\-validation|'.
+    'shell|symlink|cpanel|deface|filemanager|pki\-validation|'.
     'wp\-conflg|actuator\/env|exchange\.php|ecp\/Current|microsoft\.exchange)/i'
 ];
 
