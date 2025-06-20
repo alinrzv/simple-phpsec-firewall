@@ -132,6 +132,7 @@ $blocked_files = [
     // Miscellaneous
     'api.php' => 1, 'cpanel.php' => 1, 'login.action' => 1,
     'makeasmtp.php' => 1, 'modules.php' => 1, 'payment.php' => 1,
+    'ALFA_DATA/alfacgiapi/perl.alfa' => 1,
     's/6373e2835313e26323e2339313/_/META-INF/maven/com.atlassian.jira/' => 1,
     'sidebarx.php' => 1, 'siteindex.php' => 1, 'update.php' => 1,
     'db.php' => 1, '1.php' => 1, '0x.php' => 1,
@@ -150,11 +151,11 @@ if ($is_wordpress) {
 
 // Compiled Malicious Patterns
 // some of the urls like signatures validations etc might contain
-// r57|c99|b374k as string so we remove it !
+// r57|c99|b374k strings so we remove it
 $blocked_patterns = [
-    '/(?:\.\.\/\.\.|phpinfo|eval\(|base64_decode|config|\.env|swagger|telescope|'.
-    '_all_dbs|v2\/_catalog|debug\/default\/view|server\-status|login\.action|'.
-    'shell|symlink|cpanel|deface|filemanager|pki\-validation|'.
+    '/(?:\.\.\/\.\.|phpinfo|eval\(|base64_decode|\bconfig\b|\.env|swagger|' .
+    '_all_dbs|v2\/_catalog|debug\/default\/view|server\-status|login\.action|' .
+    '\bshell\b|symlink|cpanel|\bdeface\b|filemanager|pki\-validation|' .
     'wp\-conflg|actuator\/env|exchange\.php|ecp\/Current|microsoft\.exchange)/i'
 ];
 
@@ -185,7 +186,10 @@ $bad_user_agents = '/WPScan|sqlmap|sqlmapuseragent|nmap|nikto|dirb|fuzzer|libwww
 
 // Get request data
 $request_uri = $_SERVER['REQUEST_URI'] ?? '';
-$request_file = basename(parse_url($request_uri, PHP_URL_PATH)); // Extract the file name
+$parsed_path = parse_url($request_uri, PHP_URL_PATH);
+$request_path = ltrim($parsed_path, '/');
+$request_file = basename($parsed_path);
+
 $request_method = $_SERVER['REQUEST_METHOD'] ?? '';
 $post_data = file_get_contents('php://input'); // Read raw POST data
 $request_data = $request_uri . ' ' . $post_data;
@@ -193,8 +197,12 @@ $request_data = $request_uri . ' ' . $post_data;
 // Blocking Checks
 $block_reason = null;
 
-// 1. Direct File Match
-if (isset($blocked_files[$request_file])) {
+// 1. Full path match
+if (isset($blocked_files[$request_path])) {
+    $block_reason = "Malicious full path request";
+}
+// 2. Filename-only match
+elseif (isset($blocked_files[$request_file])) {
     $block_reason = "Malicious file request";
 }
 
