@@ -118,9 +118,9 @@ rewrite /wp-admin$ $scheme://$host$uri/ permanent;
 # Changelog
 
 ## [2025-06-21] - BugFix & optimisations
-Update security_firewall.php
-Fixed bug in URL rules/path matching 
-Various fixes related to possible articles blocking because of matching bad words.
+- Update security_firewall.php
+- Fixed bug in URL rules/path matching.
+- Various fixes related to possible articles blocking because of matching bad words.
 
 ## [2025-03-25] - Hardened PHP Firewall Script (Prepend-Optimized)
 
