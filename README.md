@@ -122,6 +122,11 @@ rewrite /wp-admin$ $scheme://$host$uri/ permanent;
 - Fixed bug in URL rules/path matching.
 - Various fixes related to possible articles blocking because of matching bad words.
 
+## [2025-05-20] - Various optimisations & Log Viewer
+- Added log_parser.php (Blocked reasons report - Security Log viewer)
+- Added Preview of Blocked reasons report - Security Log 
+- Various fixes related to firewall.
+
 ## [2025-03-25] - Hardened PHP Firewall Script (Prepend-Optimized)
 
 ### Added
