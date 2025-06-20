@@ -53,7 +53,7 @@ php_value auto_prepend_file "/www/sec_firewall/security_firewall.php"
 ```
 
 #### Step 3: Test the Firewall
-Simulate an attack to ensure it’s working by attempting to access a sensitive file:
+Simulate an attack to ensure itâ€™s working by attempting to access a sensitive file:
 ```sh
 http://yoursite.com/wp-config.php
 ```
@@ -116,6 +116,11 @@ rewrite /wp-admin$ $scheme://$host$uri/ permanent;
 ```
 
 # Changelog
+
+## [2025-06-21] - BugFix & optimisations
+Update security_firewall.php
+Fixed bug in URL rules/path matching 
+Various fixes related to possible articles blocking because of matching bad words.
 
 ## [2025-03-25] - Hardened PHP Firewall Script (Prepend-Optimized)
 
